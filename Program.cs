@@ -28,13 +28,13 @@ namespace AzureBlobStorage
 
          var destination = blobService.GetBlobContainerClient(destContainerName);
 
-         Task.WaitAny(CopyBlob(source, destination));
+         CopyBlob(source, destination);
 
          Console.ReadKey();
 
       }
 
-      static async Task CopyBlob(BlobContainerClient source, BlobContainerClient target)
+      static void CopyBlob(BlobContainerClient source, BlobContainerClient target)
       {
          var blobFileSource = source.GetBlobClient("2020ScrumGuideUS-210114-121334.pdf");
          var blobFileTarget = target.GetBlobClient("111.pdf");
@@ -45,17 +45,19 @@ namespace AzureBlobStorage
             
             var resp = leaseClient.Acquire(new TimeSpan(-1));
 
+            Console.WriteLine("Lease Id: " + leaseClient.LeaseId);
             Console.WriteLine("Lease state: " + blobFileSource.GetProperties().Value.LeaseState);
             Console.WriteLine("Lease status: " + blobFileSource.GetProperties().Value.LeaseStatus);
             Console.WriteLine("Lease duration " + blobFileSource.GetProperties().Value.LeaseDuration);
 
-            var copy = await blobFileTarget.StartCopyFromUriAsync(blobFileSource.Uri);
+            var copy = blobFileTarget.StartCopyFromUriAsync(blobFileSource.Uri);
 
-            leaseClient.Release();
+            Task.WaitAny(copy);
+
             Console.WriteLine("Lease state: " + blobFileSource.GetProperties().Value.LeaseState);
             Console.WriteLine("Lease status: " + blobFileSource.GetProperties().Value.LeaseStatus);
 
-            Console.WriteLine("File copied: " + copy.HasCompleted);
+            Console.WriteLine("File copied: " + copy.Result.GetRawResponse());
 
          }
          catch (Exception e)
@@ -66,6 +68,8 @@ namespace AzureBlobStorage
          finally
          {
             leaseClient.Release();
+            Console.WriteLine("Lease state: " + blobFileSource.GetProperties().Value.LeaseState);
+            Console.WriteLine("Lease status: " + blobFileSource.GetProperties().Value.LeaseStatus);
          }
 
       }
