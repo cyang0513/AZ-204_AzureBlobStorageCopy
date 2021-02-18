@@ -37,12 +37,12 @@ namespace AzureBlobStorage
       static void CopyBlob(BlobContainerClient source, BlobContainerClient target)
       {
          var blobFileSource = source.GetBlobClient("2020ScrumGuideUS-210114-121334.pdf");
-         var blobFileTarget = target.GetBlobClient("111.pdf");
+         var blobFileTarget = target.GetBlobClient("2020ScrumGuide.pdf");
 
          var leaseClient = blobFileSource.GetBlobLeaseClient();
          try
          {
-            
+
             var resp = leaseClient.Acquire(new TimeSpan(-1));
 
             Console.WriteLine("Lease Id: " + leaseClient.LeaseId);
@@ -58,6 +58,13 @@ namespace AzureBlobStorage
             Console.WriteLine("Lease status: " + blobFileSource.GetProperties().Value.LeaseStatus);
 
             Console.WriteLine("File copied: " + copy.Result.GetRawResponse());
+
+            var tier = blobFileSource.SetAccessTier(AccessTier.Cool, new BlobRequestConditions()
+                                                                     {
+                                                                        LeaseId = leaseClient.LeaseId
+                                                                     });
+
+            Console.WriteLine("Source Tier changed: " + tier.Status);
 
          }
          catch (Exception e)
